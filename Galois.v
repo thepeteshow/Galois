@@ -182,8 +182,7 @@ order_similarity X Y xord yord->order_similarity Y X yord xord.
 Proof.
 unfold order_similarity. intros. split. apply H. split. apply H.
 destruct H. destruct H0. destruct H1 as [g H1].
-unfold order_isomorphism in H1. destruct H1. unfold surjection in H2.
-
+unfold order_isomorphism in H1. destruct H1. unfold surjection in H2. Admitted.
 
 
 Definition Galois (X Y: Set) (xord: X->X->Prop) (yord: Y->Y->Prop) (f:X->Y) (g:Y->X): Prop:=
@@ -229,12 +228,12 @@ Proof.
     +split. split. apply H. split.
     *apply H.
     *intros. destruct H. destruct H1. apply H2. 
-    assert(eqn: yord (f(g x)) x). 
-    {apply Galois_fact_right with (xord:=xord). unfold Galois. split. assumption. split. assumption. assumption. }
+    assert(eqn: yord (f(g x)) x). apply Galois_fact_right with (xord:=xord). 
+    unfold Galois. split. assumption. split. assumption. assumption.
     destruct H1. destruct H3. apply H4 with (y:=x). 
     assumption. assumption.
-    *split. apply Galois_fact_left with (yord:=yord). unfold Galois. split. apply H. split.
-    apply H. apply H.
+    *split. apply Galois_fact_left with (yord:=yord). unfold Galois. split. apply H. split. apply H.
+    apply H.
     apply Galois_fact_right with (xord:=xord). unfold Galois. split. apply H. split.
     apply H. apply H.
     -intros. destruct H. destruct H0. split. apply H. split. apply H. 
@@ -336,9 +335,40 @@ Proof.
     unfold composite in eqn. rewrite eqn. reflexivity.
     Qed.
 
+    Definition reflex' {X: Set} (P: X->X->Prop)(Q: X->Prop): Prop:=
+        forall x: X, Q x->(P x x).
+    
+    Definition antisym' {X: Set} (P: X->X->Prop)(Q: X->Prop): Prop:=
+        forall (x y: X), Q x->Q y->(P x y)->(P y x)->x=y.
+    
+    Definition transit' {X: Set} (P: X->X->Prop)(Q: X->Prop): Prop:=
+        forall (x y z: X), Q x->Q y->Q z->(P x y)->(P y z)->(P x z).
+    
+    Definition posubset (X: Set) (order: X->X->Prop)(Q: X->Prop): Prop:=
+        (reflex' order Q)/\(antisym' order Q)/\(transit' order Q).
+
+    Fixpoint even (n: nat): Prop:=
+    match n with
+    |0=>True
+    |S n'=>match n' with
+           |0=>False 
+           |S n''=> even n''
+           end 
+    end.
+
+    Example example_reprise: 
+    posubset nat (trivial_order nat) even.
+    Proof.
+    unfold posubset. split.
+    -unfold reflex'. intros. unfold trivial_order. reflexivity.
+    -split.
+    +unfold antisym'. intros. apply H1.
+    +unfold transit'. unfold trivial_order. intros. rewrite H2. apply H3.
+    Qed.
 
 
-
+    
+    
 
 
 
