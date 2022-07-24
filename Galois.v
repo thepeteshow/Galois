@@ -365,6 +365,89 @@ Proof.
     +unfold antisym'. intros. apply H1.
     +unfold transit'. unfold trivial_order. intros. rewrite H2. apply H3.
     Qed.
+    
+    Theorem subset_restriction: forall (X: Set)(P Q: X->Prop)(ord: X->X->Prop),
+        (forall x, Q x->P x)->posubset X ord P->posubset X ord Q.
+    Proof.
+        intros. unfold posubset. split. 
+        -unfold reflex'. intros. apply H0. apply H. assumption.
+        -split.
+        +unfold antisym'. intros. apply H0. apply H. assumption. apply H. assumption. assumption. assumption.
+        +unfold transit'. intros. unfold posubset in H0. destruct H0. 
+        destruct H6. unfold transit' in H7.
+        apply H in H1. apply H7 with (y:=y)(z:=z) in H1. 
+        assumption. apply H. assumption. apply H. assumption. assumption. assumption.
+        Qed.
+
+    
+    Definition monotone' (X Y: Set)(P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y): Prop:=
+        posubset X xord P/\ posubset Y yord Q/\(forall x, P x->Q (f x))/\forall x x', P x->P x'->xord x x'->yord (f x) (f x').
+    
+    Definition order_embedding' (X Y: Set) (P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y): Prop:=
+        poset X xord/\ poset Y yord/\(forall x, P x<->Q (f x))/\forall x x', P x->P x'->xord x x'<->yord (f x) (f x').
+
+    
+    Theorem order_embedding_injective': forall (X Y: Set)(P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y) (x x': X),
+        order_embedding' X Y P Q xord yord f->P x->P x'->f(x)=f(x')->x=x'.
+    Proof.
+        intros. unfold order_embedding' in H. destruct H. destruct H3. destruct H4.
+        unfold poset in H. destruct H. destruct H6. destruct H3. destruct H8. apply H6.
+        assert (eqn: xord x x' <-> yord (f x) (f x')). apply H5. assumption. assumption.
+        apply eqn. rewrite H2. apply H3. 
+        apply H5. assumption. assumption. rewrite H2. apply H3.
+        Qed.
+
+    
+    Definition subs_surj (X Y: Set)(P:X->Prop)(Q:Y->Prop) (f: X->Y): Prop:=
+        forall y:Y, Q y->exists x, P x/\f x=y.
+        
+    Definition order_isomorphism' (X Y: Set) (P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y): Prop:=
+        order_embedding' X Y P Q xord yord f/\subs_surj X Y P Q f.
+    
+    Theorem monotone_trans': forall (X Y Z: Set) (P:X->Prop)(Q:Y->Prop)(R:Z->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) 
+        (zord: Z->Z->Prop) (f: X->Y) (g: Y->Z),
+        monotone' X Y P Q xord yord f-> monotone' Y Z Q R yord zord g-> monotone' X Z P R xord zord (composite f g).
+    Proof.
+        unfold monotone'. intros. split. apply H. split. apply H0.
+        split; intros. apply H0. apply H. assumption.
+        apply H0. apply H. assumption. apply H. assumption. apply H.
+        assumption. assumption. assumption.
+        Qed.
+    
+    Theorem monotone_assoc': forall (W X Y Z: Set) (O: W->Prop)(P:X->Prop)(Q:Y->Prop)(R:Z->Prop)
+        (word: W->W->Prop) (xord: X->X->Prop) (yord: Y->Y->Prop) (zord: Z->Z->Prop) (f: W->X) (g: X->Y) (h: Y->Z),
+        monotone' W X O P word xord f-> monotone' X Y P Q xord yord g-> monotone' Y Z Q R yord zord h->
+        composite f (composite g h)=composite (composite f g) h/\monotone' W Z O R word zord (composite f (composite g h)).
+    Proof.
+        intros. split. unfold composite. reflexivity.
+        apply monotone_trans' with (Y:=X)(Q:=P)(yord:=xord)(f:=f)(g:=(composite g h)).
+        assumption.
+        apply monotone_trans' with (Y:=Y)(Q:=Q)(yord:=yord).
+        assumption. assumption.
+        Qed.
+
+    Definition inimage (X Y: Set)(f:X->Y)(y:Y):Prop:=
+        exists x, f x=y.
+
+    Theorem embedding_isomorphism: forall (X Y: Set)(P:X->Prop)(Q:Y->Prop)(xord:X->X->Prop)(yord:Y->Y->Prop)(f:X->Y),
+        order_embedding' X Y P Q xord yord f->order_isomorphism' X Y P (fun y: Y=>Q y/\(exists x, f x=y)) xord yord f.
+    Proof.
+         unfold order_isomorphism'. unfold order_embedding'. intros. split.
+        -split. apply H. split. apply H. split. split. split. apply H. apply H0.
+        exists x. reflexivity. intros. apply H. apply H0.
+        apply H.
+        -unfold subs_surj. intros. destruct H0. destruct H1. rewrite<-H1 in H0. apply H in H0. 
+        exists x. split. assumption. assumption.
+        Qed.
+    
+    Definition inclusion_poset (X:Set):=
+
+    
+
+    
+
+    
+
 
 
     
