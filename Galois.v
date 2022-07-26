@@ -2,7 +2,7 @@ Require Import FSetProperties Zerob Sumbool DecidableTypeEx.
 Require Import Ensembles.
 Require Import List.
 Require Import Finite_sets.
-
+Require Import FunctionalExtensionality.
 
 Notation "[ ]" := nil (format "[ ]") : list_scope.
 Notation "[ x ]" := (cons x nil) : list_scope.
@@ -244,10 +244,6 @@ Proof.
     destruct H3. destruct H6. apply H7 with (y:=(g(f x))). apply H1. assumption.
     Qed.
 
-    Axiom functional_extensionality : forall {X Y: Type}
-                                    {f g : X -> Y},
-  (forall (x:X), f x = g x) -> f = g.
-    
 Theorem Galois_right_adjoint: forall (X Y: Set) (xord: X->X->Prop) (yord: Y->Y->Prop) (f:X->Y)(g:Y->X)(h:Y->X),
     Galois X Y xord yord f g->Galois X Y xord yord f h->g=h.
 Proof.
@@ -335,16 +331,16 @@ Proof.
     unfold composite in eqn. rewrite eqn. reflexivity.
     Qed.
 
-    Definition reflex' {X: Set} (P: X->X->Prop)(Q: X->Prop): Prop:=
+    Definition reflex' {X: Type} (P: X->X->Prop)(Q: X->Prop): Prop:=
         forall x: X, Q x->(P x x).
     
-    Definition antisym' {X: Set} (P: X->X->Prop)(Q: X->Prop): Prop:=
+    Definition antisym' {X: Type} (P: X->X->Prop)(Q: X->Prop): Prop:=
         forall (x y: X), Q x->Q y->(P x y)->(P y x)->x=y.
     
-    Definition transit' {X: Set} (P: X->X->Prop)(Q: X->Prop): Prop:=
+    Definition transit' {X: Type} (P: X->X->Prop)(Q: X->Prop): Prop:=
         forall (x y z: X), Q x->Q y->Q z->(P x y)->(P y z)->(P x z).
     
-    Definition posubset (X: Set) (order: X->X->Prop)(Q: X->Prop): Prop:=
+    Definition posubset (X: Type) (order: X->X->Prop)(Q: X->Prop): Prop:=
         (reflex' order Q)/\(antisym' order Q)/\(transit' order Q).
 
     Fixpoint even (n: nat): Prop:=
@@ -366,7 +362,7 @@ Proof.
     +unfold transit'. unfold trivial_order. intros. rewrite H2. apply H3.
     Qed.
     
-    Theorem subset_restriction: forall (X: Set)(P Q: X->Prop)(ord: X->X->Prop),
+    Theorem subset_restriction: forall (X: Type)(P Q: X->Prop)(ord: X->X->Prop),
         (forall x, Q x->P x)->posubset X ord P->posubset X ord Q.
     Proof.
         intros. unfold posubset. split. 
@@ -380,28 +376,29 @@ Proof.
         Qed.
 
     
-    Definition monotone' (X Y: Set)(P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y): Prop:=
+    Definition monotone' (X Y: Type)(P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y): Prop:=
         posubset X xord P/\ posubset Y yord Q/\(forall x, P x->Q (f x))/\forall x x', P x->P x'->xord x x'->yord (f x) (f x').
     
-    Definition order_embedding' (X Y: Set) (P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y): Prop:=
-        poset X xord/\ poset Y yord/\(forall x, P x<->Q (f x))/\forall x x', P x->P x'->xord x x'<->yord (f x) (f x').
+    Definition order_embedding' (X Y: Type) (P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y): Prop:=
+        posubset X xord P/\ posubset Y yord Q/\(forall x, P x<->Q (f x))/\forall x x', P x->P x'->xord x x'<->yord (f x) (f x').
 
     
-    Theorem order_embedding_injective': forall (X Y: Set)(P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y) (x x': X),
+    Theorem order_embedding_injective': forall (X Y: Type)(P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y) (x x': X),
         order_embedding' X Y P Q xord yord f->P x->P x'->f(x)=f(x')->x=x'.
     Proof.
         intros. unfold order_embedding' in H. destruct H. destruct H3. destruct H4.
         unfold poset in H. destruct H. destruct H6. destruct H3. destruct H8. apply H6.
-        assert (eqn: xord x x' <-> yord (f x) (f x')). apply H5. assumption. assumption.
-        apply eqn. rewrite H2. apply H3. 
-        apply H5. assumption. assumption. rewrite H2. apply H3.
-        Qed.
+        assert (eqn: xord x x' <-> yord (f x) (f x')); try apply H5; assumption. assumption. apply H5. assumption; assumption.
+        assumption. rewrite H2. apply H3. apply H4. assumption.
+        apply H5. assumption; assumption. assumption. rewrite H2. apply H3. apply H4. assumption.
+        Qed. 
+        
 
     
-    Definition subs_surj (X Y: Set)(P:X->Prop)(Q:Y->Prop) (f: X->Y): Prop:=
+    Definition subs_surj (X Y: Type)(P:X->Prop)(Q:Y->Prop) (f: X->Y): Prop:=
         forall y:Y, Q y->exists x, P x/\f x=y.
         
-    Definition order_isomorphism' (X Y: Set) (P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y): Prop:=
+    Definition order_isomorphism' (X Y: Type) (P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y): Prop:=
         order_embedding' X Y P Q xord yord f/\subs_surj X Y P Q f.
     
     Theorem monotone_trans': forall (X Y Z: Set) (P:X->Prop)(Q:Y->Prop)(R:Z->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) 
@@ -432,15 +429,78 @@ Proof.
     Theorem embedding_isomorphism: forall (X Y: Set)(P:X->Prop)(Q:Y->Prop)(xord:X->X->Prop)(yord:Y->Y->Prop)(f:X->Y),
         order_embedding' X Y P Q xord yord f->order_isomorphism' X Y P (fun y: Y=>Q y/\(exists x, f x=y)) xord yord f.
     Proof.
-         unfold order_isomorphism'. unfold order_embedding'. intros. split.
-        -split. apply H. split. apply H. split. split. split. apply H. apply H0.
+         unfold order_isomorphism'. unfold order_embedding'. unfold posubset. unfold reflex'. unfold antisym'. unfold transit'.
+        intros. split.
+        -split. apply H. split. split. intros. apply H. apply H0.
+        split. intros. apply H. apply H0. apply H1. assumption. assumption.
+        intros. apply H with (y:=y). apply H0. apply H1. apply H2. apply H3. apply H4. 
+        split. split. intros. split. apply H. apply H0.
         exists x. reflexivity. intros. apply H. apply H0.
         apply H.
         -unfold subs_surj. intros. destruct H0. destruct H1. rewrite<-H1 in H0. apply H in H0. 
         exists x. split. assumption. assumption.
         Qed.
     
-    Definition inclusion_poset (X:Set):=
+    Definition inclusion_poset (X:Type):Type:=
+        X->Prop.
+    
+    Definition inclusion_order (X:Type)(P Q:inclusion_poset X):Prop:=
+        forall x, P x->Q x.
+    
+    Axiom propositional_equality: forall (X:Set) (P Q:X->Prop),
+   P=Q <-> (forall x:X, P x<->Q x).
+
+    Theorem inclusion_sound: forall {X:Set} (P:(inclusion_poset X)->Prop), 
+        posubset (inclusion_poset X) (inclusion_order X) P.
+    Proof.
+        intros. unfold posubset. unfold inclusion_order. split. 
+        -unfold reflex'. intros. assumption.
+        -split.
+        +unfold antisym'. intros. apply propositional_equality. intros.
+        split. apply H1. apply H2.
+        +unfold transit'. intros. apply H3. apply H2. assumption.
+        Qed.
+        
+
+    Definition typical_helper (X:Type) (P:X->Prop) (ord:X->X->Prop) (x y:X): Prop:=
+        P x/\P y/\ord y x.
+
+
+        Definition typical_helper2 (X:Type) (P:X->Prop) (ord:X->X->Prop) (y:inclusion_poset X): (Prop):=
+           exists x:X, P x/\y=typical_helper X P ord x.
+
+    Theorem inclusion_typical: forall (X:Set) (P:X->Prop) (ord:X->X->Prop),
+        posubset X ord P->exists (Y:Set)(Q:(inclusion_poset Y)->Prop)(f:X->inclusion_poset Y), 
+        order_isomorphism' X (inclusion_poset Y) P Q ord (inclusion_order Y) f.
+    Proof.
+        intros. exists X. exists (typical_helper2 X P ord). exists (typical_helper X P ord).
+        unfold order_isomorphism'. unfold order_embedding'. unfold subs_surj.
+        split. split. assumption. split. apply inclusion_sound. split.
+        -split.
+        +intros. unfold typical_helper2. exists x. split. assumption. reflexivity.
+        +unfold typical_helper2. intros.
+        destruct H0. destruct H0. 
+        apply propositional_equality with (x:=x0) in H1.  
+        unfold typical_helper in H1. destruct H1.
+        destruct H2. split. assumption. split. assumption. apply H. assumption.
+        assumption.
+        -intros. split; unfold inclusion_order; unfold typical_helper; intros.
+        + split. assumption. split. apply H3. apply H with (y:=x).
+        apply H3. apply H3. assumption. apply H3. assumption.
+        +assert (eqn: P x/\P x/\ord x x->P x'/\P x/\ord x x').
+        {apply H2. } destruct eqn. split. assumption. split. assumption. apply H. assumption.
+        apply H4.
+        -unfold inclusion_poset. unfold typical_helper2. intros. destruct H0.
+        exists x. split. apply H0. destruct H0. rewrite H1. reflexivity.
+        Qed.
+        
+
+        
+        
+        
+    
+        
+    
 
     
 
