@@ -463,10 +463,10 @@ Proof.
     Definition inclusion_order (X:Type)(P Q:inclusion_poset X):Prop:=
         forall x, P x->Q x.
     
-    Axiom propositional_equality: forall (X:Set) (P Q:X->Prop),
+    Axiom propositional_equality: forall (X:Type) (P Q:X->Prop),
    P=Q <-> (forall x:X, P x<->Q x).
     
-    Theorem inclusion_sound: forall {X:Set} (P:(inclusion_poset X)->Prop), 
+    Theorem inclusion_sound: forall {X:Type} (P:(inclusion_poset X)->Prop), 
         posubset (inclusion_poset X) (inclusion_order X) P.
     Proof.
         intros. unfold posubset. unfold inclusion_order. split. 
@@ -727,59 +727,46 @@ Proof.
             try assumption. apply H. apply f. assumption. assumption.
         Qed.
 
-        Definition subset_function (X Y: Type)(r:X->Y->Prop)(P:X->Prop)(y:Y): Prop:=
-            forall x:X, P x->r x y.
+        Definition subset_function (X Y: Type)(r:X->Y->Prop)(Q:Y->Prop)(P:X->Prop)(y:Y): Prop:=
+            Q y/\forall x:X, P x->r x y.
         
-        Definition subset_discriminant (X Y: Type)(Q:Y->Prop)(r:X->Y->Prop)(B:inclusion_poset Y):Prop:=
-            (forall y, B y->Q y)/\exists (A:inclusion_poset X), B=subset_function X Y r A.
+        Definition subset_discriminant (X Y: Type)(P:X->Prop)(Q:Y->Prop)(r:X->Y->Prop)(B:inclusion_poset Y):Prop:=
+            exists (A:inclusion_poset X), (forall x, A x->P x)/\B=subset_function X Y r Q A.
 
         Definition invert {X Y: Type}(r:X->Y->Prop)(y:Y)(x:X):Prop:=
             r x y.
         
         Definition inclusion_disorder (X:Type)(P Q:inclusion_poset X):Prop:=
             inclusion_order X Q P.
-        
+
         Theorem Galois_instance: forall (X Y:Type)(P:X->Prop)(Q:Y->Prop)(r:X->Y->Prop)(s:Y->X->Prop),
-            Galois' (inclusion_poset X) (inclusion_poset Y) (subset_discriminant Y X P (invert r))
-                    (subset_discriminant X Y Q r)(inclusion_order X)(inclusion_disorder Y)(subset_function X Y r)(subset_function Y X (invert r)).
+            Galois' (inclusion_poset X) (inclusion_poset Y) (subset_discriminant Y X Q P (invert r))
+                    (subset_discriminant X Y P Q r)(inclusion_order X)(inclusion_disorder Y)(subset_function X Y r Q)(subset_function Y X (invert r) P).
         Proof.
-            intros. unfold Galois'. split.
-            apply inclusion_sound. with (P:=(subset_discriminant Y X P (invert r))).
-            unfold posubset. unfold subset_discriminant.
-            unfold inclusion_order. unfold inclusion_disorder. unfold subset_function. 
-            unfold reflex'. unfold antisym'. unfold transit'. split.
-            -split.
-            +unfold reflex'.
-            
-            
+            intros. unfold Galois'. split. 
+            apply inclusion_sound. split.
+            unfold inclusion_disorder. split.
+            unfold reflex'. intros. unfold inclusion_order. intros. assumption.
+            split. unfold antisym'. unfold inclusion_order. intros. 
+            apply propositional_equality. intros. split; intros.
+            apply H2. assumption. apply H1. assumption.
+            unfold transit'. unfold inclusion_order. intros.
+            apply H2. apply H3. assumption.
+            intros. unfold subset_discriminant. split; intros.
+            destruct H. destruct H. exists x. split; intros. 
+            rewrite H0 in H1. apply H1. reflexivity.
+            split; intros. destruct H. destruct H.
+            exists y. split; intros. rewrite H0 in H1. 
+            apply H1. reflexivity. 
+            unfold inclusion_disorder. unfold inclusion_order. unfold subset_function.
+            split; intros. destruct H0. destruct H0. split.
+             rewrite H3 in H2. apply H2.
+            intros. apply H1 in H4. apply H4. assumption.
+            split; intros. destruct H. destruct H.
+            rewrite H3 in H2. apply H2.
+            apply H1 in H3. apply H3. assumption.
+            Qed.
 
-
-
-        
-        
-        
-
-
-        
-
-
-        
-        
-        
-    
-        
-    
-
-    
-
-    
-
-    
-
-
-
-    
-    
 
 
 
