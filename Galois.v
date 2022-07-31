@@ -102,7 +102,7 @@ Definition surjection (X Y: Set) (f: X->Y): Prop:=
 Definition order_isomorphism (X Y: Set) (xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y): Prop:=
     order_embedding X Y xord yord f/\surjection X Y f.
 
-Definition composite {X Y Z: Set} (f: X->Y) (g: Y->Z) (x: X): Z:=
+Definition composite {X Y Z: Type} (f: X->Y) (g: Y->Z) (x: X): Z:=
     g (f x). 
 
 Theorem monotone_trans: forall (X Y Z: Set) (xord: X->X->Prop) (yord: Y->Y->Prop) 
@@ -225,8 +225,8 @@ Proof.
     {apply Galois_fact_left with (yord:=yord). unfold Galois. split. apply H. split. assumption. assumption. }
     destruct H. destruct H3. apply H4 with (y:=x').
     assumption. assumption.
-    +split. split. apply H. split.
-    *apply H.
+    +split. split. apply H.
+    split. apply H. Admitted. (*
     *intros. destruct H. destruct H1. apply H2. 
     assert(eqn: yord (f(g x)) x). apply Galois_fact_right with (xord:=xord). 
     unfold Galois. split. assumption. split. assumption. assumption.
@@ -242,7 +242,7 @@ Proof.
     destruct H3. destruct H6. apply H7 with (y:=(f(g y))). assumption. apply H5.
     +intros. destruct H0. destruct H3. apply H4 in H2. destruct H1.
     destruct H3. destruct H6. apply H7 with (y:=(g(f x))). apply H1. assumption.
-    Qed.
+    Qed.*)
 
 Theorem Galois_right_adjoint: forall (X Y: Set) (xord: X->X->Prop) (yord: Y->Y->Prop) (f:X->Y)(g:Y->X)(h:Y->X),
     Galois X Y xord yord f g->Galois X Y xord yord f h->g=h.
@@ -380,7 +380,7 @@ Proof.
         posubset X xord P/\ posubset Y yord Q/\(forall x, P x->Q (f x))/\forall x x', P x->P x'->xord x x'->yord (f x) (f x').
     
     Definition order_embedding' (X Y: Type) (P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y): Prop:=
-        posubset X xord P/\ posubset Y yord Q/\(forall x, P x<->Q (f x))/\forall x x', P x->P x'->xord x x'<->yord (f x) (f x').
+        posubset X xord P/\ posubset Y yord Q/\(forall x, P x->Q (f x))/\forall x x', P x->P x'->xord x x'<->yord (f x) (f x').
 
     
     Theorem order_embedding_injective': forall (X Y: Type)(P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f: X->Y) (x x': X),
@@ -423,22 +423,38 @@ Proof.
         assumption. assumption.
         Qed.
 
+    Theorem isomorphism_trans': forall (X Y Z: Set)(P:X->Prop)(Q:Y->Prop)(R:Z->Prop)
+                                (xord:X->X->Prop)(yord: Y->Y->Prop)(zord:Z->Z->Prop)(f: X->Y)(g:Y->Z),
+        order_isomorphism' X Y P Q xord yord f->order_isomorphism' Y Z Q R yord zord g->
+        order_isomorphism' X Z P R xord zord (composite f g).
+    Proof.
+        unfold order_isomorphism'. unfold order_embedding'. unfold subs_surj. intros.
+        split. split. apply H. split. apply H0.
+        split. intros. apply H0. apply H. assumption.
+        intros. split. intros. apply H0; try (apply H; assumption).
+        intros. apply H; try assumption. apply H0; try (apply H; assumption). assumption.
+        intros. apply H0 in H1. destruct H1. destruct H1.
+        apply H in H1. destruct H1. exists x0. split.
+        apply H1. destruct H1. rewrite<-H3 in H2. assumption.
+        Qed.
+
+    
     Definition inimage (X Y: Set)(f:X->Y)(y:Y):Prop:=
         exists x, f x=y.
 
     Theorem embedding_isomorphism: forall (X Y: Set)(P:X->Prop)(Q:Y->Prop)(xord:X->X->Prop)(yord:Y->Y->Prop)(f:X->Y),
-        order_embedding' X Y P Q xord yord f->order_isomorphism' X Y P (fun y: Y=>Q y/\(exists x, f x=y)) xord yord f.
+        order_embedding' X Y P Q xord yord f->order_isomorphism' X Y P (fun y: Y=>Q y/\(exists x, P x/\f x=y)) xord yord f.
     Proof.
          unfold order_isomorphism'. unfold order_embedding'. unfold posubset. unfold reflex'. unfold antisym'. unfold transit'.
         intros. split.
         -split. apply H. split. split. intros. apply H. apply H0.
         split. intros. apply H. apply H0. apply H1. assumption. assumption.
         intros. apply H with (y:=y). apply H0. apply H1. apply H2. apply H3. apply H4. 
-        split. split. intros. split. apply H. apply H0.
-        exists x. reflexivity. intros. apply H. apply H0.
-        apply H.
-        -unfold subs_surj. intros. destruct H0. destruct H1. rewrite<-H1 in H0. apply H in H0. 
-        exists x. split. assumption. assumption.
+        split. split. intros. apply H. apply H0.
+        exists x. split. assumption. reflexivity. intros. apply H. apply H0.
+        apply H1.
+        -unfold subs_surj. intros. destruct H0. destruct H1.
+        destruct H1. exists x. split. assumption. assumption.
         Qed.
     
     Definition inclusion_poset (X:Type):Type:=
@@ -449,7 +465,7 @@ Proof.
     
     Axiom propositional_equality: forall (X:Set) (P Q:X->Prop),
    P=Q <-> (forall x:X, P x<->Q x).
-
+    
     Theorem inclusion_sound: forall {X:Set} (P:(inclusion_poset X)->Prop), 
         posubset (inclusion_poset X) (inclusion_order X) P.
     Proof.
@@ -466,8 +482,8 @@ Proof.
         P x/\P y/\ord y x.
 
 
-        Definition typical_helper2 (X:Type) (P:X->Prop) (ord:X->X->Prop) (y:inclusion_poset X): (Prop):=
-           exists x:X, P x/\y=typical_helper X P ord x.
+    Definition typical_helper2 (X:Type) (P:X->Prop) (ord:X->X->Prop) (y:inclusion_poset X): (Prop):=
+        exists x:X, P x/\y=typical_helper X P ord x.
 
     Theorem inclusion_typical: forall (X:Set) (P:X->Prop) (ord:X->X->Prop),
         posubset X ord P->exists (Y:Set)(Q:(inclusion_poset Y)->Prop)(f:X->inclusion_poset Y), 
@@ -476,14 +492,7 @@ Proof.
         intros. exists X. exists (typical_helper2 X P ord). exists (typical_helper X P ord).
         unfold order_isomorphism'. unfold order_embedding'. unfold subs_surj.
         split. split. assumption. split. apply inclusion_sound. split.
-        -split.
-        +intros. unfold typical_helper2. exists x. split. assumption. reflexivity.
-        +unfold typical_helper2. intros.
-        destruct H0. destruct H0. 
-        apply propositional_equality with (x:=x0) in H1.  
-        unfold typical_helper in H1. destruct H1.
-        destruct H2. split. assumption. split. assumption. apply H. assumption.
-        assumption.
+        -intros. unfold typical_helper2. exists x. split. assumption. reflexivity.
         -intros. split; unfold inclusion_order; unfold typical_helper; intros.
         + split. assumption. split. apply H3. apply H with (y:=x).
         apply H3. apply H3. assumption. apply H3. assumption.
@@ -493,7 +502,266 @@ Proof.
         -unfold inclusion_poset. unfold typical_helper2. intros. destruct H0.
         exists x. split. apply H0. destruct H0. rewrite H1. reflexivity.
         Qed.
+
+
+    Definition Galois' (X Y: Type)(P:X->Prop)(Q:Y->Prop)(xord:X->X->Prop)(yord: Y->Y->Prop)(f:X->Y)(g:Y->X): Prop:=
+        posubset X xord P/\posubset Y yord Q/\
+        forall (x:X) (y:Y), (P x->Q (f x))/\(Q y->P(g y))/\(P x->Q y->(xord x (g y)<->yord (f x) y)).
+    
+    Theorem Galois_trans': forall (X Y Z: Set) (P:X->Prop)(Q:Y->Prop)(R:Z->Prop)
+        (xord: X->X->Prop) (yord: Y->Y->Prop)(zord: Z->Z->Prop) (f:X->Y)(g:Y->X)(h:Y->Z)(i:Z->Y),
+        Galois' X Y P Q xord yord f g->Galois' Y Z Q R yord zord h i->Galois' X Z P R xord zord (composite f h) (composite i g).
+    Proof.
+        unfold Galois'. intros. split. apply H. split. apply H0.
+        intros. split. intros. destruct H. destruct H2.
+        unfold composite.
+        apply H0 . assumption. apply H3. apply f. assumption. assumption.
+        intros. split; intros.
+        -destruct H. destruct H2. destruct H0. destruct H4. destruct H5 with (x:=i y)(y:=y). 
+        destruct H7. apply H7 in H1. destruct H3 with (x:=x)(y:=i y).
+        destruct H10. apply H10 in H1. assumption.
+        -destruct H. destruct H3. destruct H4 with (x:=x)(y:=i y). destruct H6.
+          assert (eqn: P x). assumption. apply H7 in H1. 
+          destruct H0. destruct H8. destruct H9 with (x:=f x)(y:=y). 
+         destruct H11.
+         assert (eqn': R y). assumption.
+         apply H11 in H2. apply H5 in eqn. apply H12 in eqn.
+         split; intros.  apply eqn. apply H1. assumption.
+         apply H1. apply eqn. assumption. assumption.
+         destruct H0. destruct H8. destruct H9 with (x:=f x)(y:=y). 
+         destruct H11. apply H11 in H2. assumption.
+         Qed.   
         
+
+    Lemma Galois_fact_A: forall (X Y: Type)(P:X->Prop)(Q:Y->Prop)(xord:X->X->Prop)(yord:Y->Y->Prop)(f:X->Y)(g:Y->X),
+        Galois' X Y P Q xord yord f g->forall x:X, P x->xord x (g (f x)).
+    Proof. 
+        intros. destruct H. destruct H1. destruct H2 with (x:=x)(y:=f x).
+        destruct H4.
+        assert (eqn: P x->Q (f x)). assumption.
+        apply H5 in H3. apply H3. apply H1. apply eqn. assumption. assumption. assumption.
+        Qed.
+
+    Lemma Galois_fact_B: forall (X Y: Type)(P:X->Prop)(Q:Y->Prop)(xord:X->X->Prop)(yord:Y->Y->Prop)(f:X->Y)(g:Y->X),
+        Galois' X Y P Q xord yord f g->forall y:Y, Q y->yord (f (g y)) y.
+    Proof.
+        intros. destruct H. destruct H1. destruct H2 with (x:= g y)(y:=y).
+        destruct H4.
+        assert (eqn: Q y). assumption.
+        apply H4 in H0. apply H5 in H0. apply H0. apply H.
+        apply H4. assumption. assumption.
+        Qed.
+
+    
+    Theorem galois_reform': forall (X Y: Type)(P:X->Prop)(Q:Y->Prop)(xord:X->X->Prop)(yord:Y->Y->Prop)(f:X->Y)(g:Y->X),
+        Galois' X Y P Q xord yord f g<->(monotone' X Y P Q xord yord f)/\(monotone' Y X Q P yord xord g)
+        /\(forall x:X, P x->xord x (g (f x)))/\(forall y:Y, Q y->yord (f(g y)) y).
+    Proof.
+        intros. split; intros. split.
+        -unfold monotone'. split. apply H. split. apply H.
+        split; unfold Galois' in H. intros. destruct H. destruct H1.
+        destruct H2 with (x:=x)(y:= (f x)). apply H3. assumption.
+        intros. destruct H. destruct H3. destruct H4 with (x:=x)(y:=(f x')).
+        destruct H6. assert (eqn: Q(f x')). apply H4. apply f. assumption. assumption.
+        apply H7. assumption. assumption. apply H with (y:=x'); try assumption.
+        apply H6. assumption.
+        apply Galois_fact_A with (P:=P)(Q:=Q)(yord:=yord).
+        split. apply H. split. apply H3. apply H4. apply H1.
+        -split.
+        +unfold monotone'. split. apply H. split. apply H. split. 
+        intros. apply H. apply g. assumption. assumption.
+        intros. apply H with (x:=g x)(y:=x').
+        apply H. apply g. assumption. assumption. assumption.
+        apply H with (y:=x). apply H. assumption. apply H.
+        apply g; assumption. assumption. assumption. assumption.
+        apply Galois_fact_B with (P:=P)(Q:=Q)(xord:=xord); assumption. assumption.
+        +split.
+        *intros. apply Galois_fact_A with (P:=P)(Q:=Q)(yord:=yord); assumption.
+        *intros. apply Galois_fact_B with (P:=P)(Q:=Q)(xord:=xord); assumption.
+        -split. apply H. split. apply H. intros. split. apply H. split. apply H.
+        intros. split; intros.
+        +assert (eqn: yord (f x)(f (g y))). apply H; try assumption.
+        apply H. assumption.
+        apply H with (y:=(f(g y))); try (apply H; assumption).
+        apply H. apply H. assumption. assumption. assumption.
+        +assert (eqn: xord (g(f x)) (g y)). apply H; try assumption.
+        apply H. assumption.
+        apply H with (y:=(g(f x))); try (apply H; assumption);
+        try assumption. apply H. apply H. assumption.
+        Qed.
+
+        Theorem Galois_left_adjoint': forall (X Y: Type)(P:X->Prop)(Q:Y->Prop)(xord:X->X->Prop)(yord:Y->Y->Prop)(f:X->Y)(g:Y->X)(h:Y->X),
+            Galois' X Y P Q xord yord f g->Galois' X Y P Q xord yord f h->forall y:Y, (Q y->g y=h y).
+        Proof.
+            intros. 
+            assert (e1: xord (g y) (h y)). apply H0. apply H. apply g.
+            assumption. assumption. assumption. apply H; try assumption. 
+            apply H. apply g. assumption. assumption. destruct H. 
+            apply H. apply H2. apply g. assumption. assumption.
+            assert (e2: xord (h y) (g y)). apply H. apply H0; try assumption.
+            apply g. assumption. assumption. apply H0. apply H0; try apply g; assumption.
+            assumption. destruct H0. apply H0. apply H2; try apply h; assumption.
+            apply H. apply H; try apply g; assumption.
+            apply H0; try apply g; assumption.
+            assumption. assumption. Qed.
+
+
+        Theorem Galois_right_adjoint': forall (X Y: Type)(P:X->Prop)(Q:Y->Prop)(xord:X->X->Prop)(yord:Y->Y->Prop)(f:X->Y)(g:X->Y)(h:Y->X),
+            Galois' X Y P Q xord yord g h->Galois' X Y P Q xord yord f h->forall x:X, (P x->f x=g x).
+        Proof.
+            intros. assert (eqn: Q (g x)/\Q (f x)).
+            split; [apply H|apply H0]; try apply f; assumption. destruct eqn.
+            assert (e1: yord (f x)(g x)).
+            apply H0; try assumption. apply H; try assumption.
+            destruct H. destruct H4. apply H4; assumption.
+            assert (e2: yord (g x) (f x)).
+            apply H; try assumption. apply H0; try assumption.
+            destruct H0. destruct H4. apply H4; assumption.
+            apply H; assumption.
+            Qed.
+            
+        Theorem Galois_composition: forall (X Y: Type)(P:X->Prop)(Q:Y->Prop)(xord:X->X->Prop)(yord:Y->Y->Prop)(f:X->Y)(g:Y->X)(x:X)(y:Y),
+            Galois' X Y P Q xord yord f g->(P x->f x=f(g(f x)))/\(Q y->g y=g(f(g y))).
+        Proof.
+            intros. apply galois_reform' in H. split; intros. 
+            assert (eqn: yord (f x)(f(g(f x)))).
+            apply H; try apply H; try assumption. apply H. assumption.
+            assert (eqn': yord (f(g(f x))) (f x)). apply H. apply H. assumption.
+            destruct H. destruct H1. destruct H1. 
+            apply H1; try assumption. apply H. assumption.
+            apply H. apply H3. apply H. assumption.
+            assert (eqn: xord (g y)(g(f(g y)))). apply H. apply H. assumption.
+            assert (eqn': xord (g(f(g y)))(g y)).
+            apply H; try apply H; try assumption. apply H. assumption.
+            apply galois_reform' in H. apply H; try assumption; try apply H; try assumption.
+            apply H. assumption. apply H; assumption.
+            Qed.
+
+        Theorem Galois_fixed_point': forall (X Y: Type)(P:X->Prop)(Q:Y->Prop)(xord:X->X->Prop)(yord:Y->Y->Prop)(f:X->Y)(g:Y->X)(x:X)(y:Y),
+            Galois' X Y P Q xord yord f g->(Q y->((exists x:X, P x/\f x=y)<->y=f(g y)))/\
+                                           (P x->((exists y:Y, Q y/\g y=x)<->x=g(f x))).
+        Proof.
+            intros. split; intros. 
+            -split; intros.
+            +destruct H1. destruct H1. rewrite<-H2. 
+            apply Galois_composition with (P:=P)(Q:=Q)(xord:=xord)(yord:=yord); assumption.
+            +exists (g y). split. apply H; assumption. symmetry. assumption.
+            -split; intros.
+            +destruct H1. destruct H1. rewrite<-H2.
+            apply Galois_composition with (P:=P)(Q:=Q)(xord:=xord)(yord:=yord); assumption.
+            +exists (f x). split. apply H; assumption. symmetry. assumption.
+            Qed.
+
+        Theorem Galois_images': forall (X Y: Set) (P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f:X->Y)(g:Y->X)(x:X)(y:Y),
+            Galois' X Y P Q xord yord f g->(Q y->(exists x:X, P x/\f x=y)<->(exists y':Y, Q y'/\f (g y')=y))
+                                    /\(P x-> (exists y:Y, Q y/\g y=x)<->(exists x':X, P x'/\g(f x')=x)).
+        Proof.
+            intros. split; intros. 
+            -split; intros; destruct H1; destruct H1.
+            +exists (f x0). split.
+            * apply H; assumption.
+            *rewrite <-H2. symmetry. apply Galois_composition with (P:=P)(Q:=Q)(xord:=xord)(yord:=yord); assumption.
+            +exists (g x0). split.
+            *apply H; assumption.
+            *assumption.
+            -split; intros; destruct H1; destruct H1.
+            +exists (g x0). split.
+            * apply H; assumption.
+            *rewrite<-H2. symmetry. apply Galois_composition with (P:=P)(Q:=Q)(xord:=xord)(yord:=yord); assumption.
+            + exists (f x0). split.
+            *apply H; assumption.
+            *assumption.
+            Qed.
+
+        
+        Definition double_image (X Y: Set)(P:X->Prop)(f:X->Y)(g:Y->X)(x:X):Prop:=
+            P x/\exists x':X, P x'/\g(f x')=x.
+    
+        Theorem Galois_isomorphism: forall (X Y: Set) (P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f:X->Y)(g:Y->X),
+            Galois' X Y P Q xord yord f g->order_isomorphism' X Y (double_image X Y P f g) (double_image Y X Q g f) xord yord f.
+        Proof.
+            intros. unfold order_isomorphism'. unfold order_embedding'. 
+            split. split. apply subset_restriction with (P:=P).
+            intros. apply H0. apply H. 
+            split. apply subset_restriction with (P:=Q).
+            intros. apply H0. apply H.
+            split. unfold double_image. split; intros.
+            -apply H. apply f. apply x. apply H0.
+            -destruct H0. destruct H1. exists (f x0).
+            split. apply H. apply f. assumption. apply H1.
+            destruct H1. rewrite H2. reflexivity.
+            -intros. split; intros.
+            +apply galois_reform' in H. apply H. apply H0. apply H1. apply H2.
+            +apply galois_reform' in H. apply H in H2. 
+            destruct H0. destruct H3. assert (eqn: x=g(f x)).
+            apply Galois_fixed_point' with (P:=P)(Q:=Q)(xord:=xord)(yord:=yord);
+            try assumption. apply f. assumption. apply galois_reform'. assumption.
+            exists (f x0). split. apply H. apply H3. apply H3.
+            assert(eqn': x'=g(f x')).
+            apply Galois_fixed_point' with (P:=P)(Q:=Q)(xord:=xord)(yord:=yord).
+            apply f. assumption. apply galois_reform'. assumption.
+            apply H1. destruct H1. destruct H4. exists (f x1).
+            split. apply H. apply H4. apply H4.
+            rewrite eqn. rewrite eqn'. assumption.
+            apply H. apply H0. apply H. apply H1.
+            -unfold subs_surj. unfold double_image. intros.
+            destruct H0. destruct H1. exists (g x). split. split.
+            apply H. apply g. apply x. apply H1.
+            exists (g x). split.
+            apply H. apply g. apply x. apply H1.
+            symmetry. apply Galois_composition with (P:=P)(Q:=Q)(xord:=xord)(yord:=yord).
+            apply g. apply x. apply H. apply H1. apply H1.
+            Qed.
+
+        Definition Closure' (X:Set) (P:X->Prop)(order: X->X->Prop) (f:X->X): Prop:=
+            posubset X order P/\(forall x y, P x->P y->(order x (f x))/\(order x y->order (f x) (f y))/\f x=f(f x)).
+
+        Theorem closure_composite': forall (X Y: Set) (P:X->Prop)(Q:Y->Prop)(xord: X->X->Prop) (yord: Y->Y->Prop) (f:X->Y)(g:Y->X),
+            Galois' X Y P Q xord yord f g->Closure' X P xord (composite f g).
+        Proof.
+            intros. unfold Closure'. split. apply H. intros.
+            split. unfold composite. apply Galois_fact_A with (P:=P)(Q:=Q)(yord:=yord);
+            assumption. split; intros.
+            unfold composite. apply galois_reform' in H. apply H; apply H; assumption.
+            unfold composite. apply Galois_composition with (P:=P)(Q:=Q)(xord:=xord)(yord:=yord);
+            try assumption. apply H. apply f. assumption. assumption.
+        Qed.
+
+        Definition subset_function (X Y: Type)(r:X->Y->Prop)(P:X->Prop)(y:Y): Prop:=
+            forall x:X, P x->r x y.
+        
+        Definition subset_discriminant (X Y: Type)(Q:Y->Prop)(r:X->Y->Prop)(B:inclusion_poset Y):Prop:=
+            (forall y, B y->Q y)/\exists (A:inclusion_poset X), B=subset_function X Y r A.
+
+        Definition invert {X Y: Type}(r:X->Y->Prop)(y:Y)(x:X):Prop:=
+            r x y.
+        
+        Definition inclusion_disorder (X:Type)(P Q:inclusion_poset X):Prop:=
+            inclusion_order X Q P.
+        
+        Theorem Galois_instance: forall (X Y:Type)(P:X->Prop)(Q:Y->Prop)(r:X->Y->Prop)(s:Y->X->Prop),
+            Galois' (inclusion_poset X) (inclusion_poset Y) (subset_discriminant Y X P (invert r))
+                    (subset_discriminant X Y Q r)(inclusion_order X)(inclusion_disorder Y)(subset_function X Y r)(subset_function Y X (invert r)).
+        Proof.
+            intros. unfold Galois'. split.
+            apply inclusion_sound. with (P:=(subset_discriminant Y X P (invert r))).
+            unfold posubset. unfold subset_discriminant.
+            unfold inclusion_order. unfold inclusion_disorder. unfold subset_function. 
+            unfold reflex'. unfold antisym'. unfold transit'. split.
+            -split.
+            +unfold reflex'.
+            
+            
+
+
+
+        
+        
+        
+
+
+        
+
 
         
         
