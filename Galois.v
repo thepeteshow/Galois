@@ -768,6 +768,228 @@ Proof.
             Qed.
 
 
+        Inductive orthoprod (X Y:Type) : Type :=
+            | pair (x:X)(y:Y).
+        
+        Definition fst (X Y:Type)(p: orthoprod X Y) : X :=
+            match p with 
+            | pair _ _ x y=>x
+            end.
+        
+        Definition snd (X Y:Type)(p: orthoprod X Y) : Y :=
+            match p with 
+            | pair _ _ x y=>y
+            end.
+        Theorem product_terms: forall (X Y:Type)(p:orthoprod X Y),
+            p=pair X Y (fst X Y p)(snd X Y p).
+        Proof.
+            intros. destruct p. reflexivity. Qed.
+
+
+        Definition compord (X Y:Type)(xord:X->X->Prop)(yord:Y->Y->Prop)(p1:orthoprod X Y)(p2: orthoprod X Y):Prop:=
+            xord (fst X Y p1)(fst X Y p2)/\yord (snd X Y p1)(snd X Y p2).
+
+        Definition compordor (X Y:Type)(xord:X->X->Prop)(yord:Y->Y->Prop)(p1:orthoprod X Y)(p2: orthoprod X Y):Prop:=
+            xord (fst X Y p1)(fst X Y p2)\/yord (snd X Y p1)(snd X Y p2).
+        
+        Definition compprop (X Y:Type)(P:X->Prop)(Q:Y->Prop)(p:orthoprod X Y):Prop:=
+            P (fst X Y p)/\Q (snd X Y p).
+
+        Definition compfunc (W X Y Z:Type)(f:X->W)(h:Y->Z)(p:orthoprod X Y):orthoprod W Z:=
+            pair W Z (f (fst X Y p))(h (snd X Y p)).
+
+        Theorem orthogonal_composition: forall (W X Y Z:Type)(P:X->Prop)(Q:Y->Prop)(R:W->Prop)(S:Z->Prop)
+                                                   (word:W->W->Prop)(xord:X->X->Prop)(yord:Y->Y->Prop)(zord:Z->Z->Prop)
+                                                   (f:X->W)(g:W->X)(h:Y->Z)(i:Z->Y),
+            Galois' X W P R xord word f g->Galois' Y Z Q S yord zord h i->
+            Galois' (orthoprod X Y)(orthoprod W Z )(compprop X Y P Q)(compprop W Z R S)(compord X Y xord yord)
+            (compord W Z word zord)(compfunc W X Y Z f h)(compfunc X W Z Y g i).
+        Proof.
+            unfold compord. unfold compfunc. unfold compprop.
+            intros. unfold Galois'. unfold posubset. unfold reflex'.
+            unfold antisym'. unfold transit'. split. split; intros. 
+            split. apply H. apply H1. apply H0. apply H1.
+            split; intros. 
+            rewrite product_terms. rewrite product_terms with (p:=x). 
+            destruct H3. destruct H4. destruct H. destruct H. 
+            apply H8 in H3. apply H3 in H4.
+            destruct H0. destruct H0. apply H10 in H5. apply H5 in H6.
+            rewrite H4. rewrite H6. reflexivity. apply H1. apply H2.
+            apply H1. apply H2.
+            split. apply H with (y:=(fst X Y y)). 
+            apply H1. apply H2. apply H3. apply H4. apply H5. 
+            apply H0 with (y:=(snd X Y y)). 
+            apply H1. apply H2. apply H3. apply H4. apply H5.
+            split. split; intros.
+            split. apply H. apply H1. apply H0. apply H1.
+            split; intros.
+            rewrite product_terms. rewrite product_terms with (p:=x).
+            destruct H3. destruct H4. 
+            destruct H. destruct H7. destruct H7. apply H9 in H3. apply H3 in H4.
+            destruct H0. destruct H10. destruct H10. apply H12 in H5. apply H5 in H6.
+            rewrite H4. rewrite H6. reflexivity.
+            apply H1. apply H2. apply H1. apply H2.
+            split; [apply H with (y:=fst W Z y)|apply H0 with (y:=snd W Z y)];
+            try apply H1; try apply H2; try apply H3; try apply H4; try apply H5.
+            intros. split; intros. split.
+            simpl. apply H. apply f. apply (fst X Y x). apply H1.
+            simpl. apply H0. apply h. apply (snd X Y x). apply H1.
+            split; intros. split.
+            simpl. apply H. apply g. apply (fst W Z y). apply H1.
+            simpl. apply H0. apply i. apply (snd W Z y). apply H1.
+            split; intros; split; simpl; simpl in H3; destruct H3.
+            apply H. apply H1. apply H2. apply H3.
+            apply H0. apply H1. apply H2. apply H4.
+            apply H. apply H1. apply H2. apply H3.
+            apply H0. apply H1. apply H2. apply H4.
+            Qed.
+
+        Definition pool_minimum (A B C D: Type)(g:C->A)(i:D->(A->B))(aord:A->A->Prop)
+                        (xord: (A->B)->(A->B)->Prop)(S:C->Prop)(T:D->Prop):Prop:=
+            forall (c1 c2: C)(d1 d2: D), S c1->S c2->T d1->T d2->i(d1) (g(c1)) =i(d2) (g(c2))
+            ->(aord (g c1) (g c2)/\xord (i d1) (i d2))\/(aord (g c2) (g c1)/\xord (i d2) (i d1)).
+
+        Definition orderability (A B C D: Type)(g:C->A)(i:D->(A->B))(aord:A->A->Prop)
+                        (xord: (A->B)->(A->B)->Prop)(P:A->Prop)(Q: (A->B)->Prop)(R:B->Prop)
+                        (S:C->Prop)(T:D->Prop):Prop:=
+            exists (funct: B->orthoprod A (A->B)),
+            forall (b:B) (c: C)(d:D), (R b->P (fst A (A->B) (funct b))/\ Q (snd A (A->B) (funct b))
+            /\(snd A (A->B) (funct b)) (fst A (A->B) (funct b))=b)/\
+            (S c->T d->
+            aord (fst A (A->B) (funct (i d (g c))))(g c)/\xord(snd A (A->B) (funct (i d (g c)))) (i d))
+            /\(R b->S c->T d-> aord (fst A (A->B) (funct b))(g c)->
+            xord (snd A (A->B) (funct b))(i d)->
+             aord  (fst A (A->B) (funct b))(fst A (A->B) (funct (i d (g c))))/\
+             xord (snd A (A->B) (funct b))(snd A (A->B) (funct (i d (g c)))) ).
+
+        Definition depfunc (A B C D: Type)(g:C->A)(i:D->(A->B)) (p:orthoprod C D): B:=
+            i(snd C D p)(g(fst C D p)). 
+
+        Definition depord (A B:Type)(aord:A->A->Prop)(xord:(A->B)->(A->B)->Prop)(func: B->orthoprod A (A->B))(b1 b2: B):Prop:=
+            aord (fst A (A->B) (func b1)) (fst A (A->B) (func b2))/\xord (snd A (A->B) (func b1))(snd A (A->B) (func b2)).
+
+
+        Theorem dependent_product: forall (A B C D: Type)(P:A->Prop)(Q:(A->B)->Prop)(R:B->Prop)
+                        (S:C->Prop)(T:D->Prop)(aord:A->A->Prop)(xord:(A->B)->(A->B)->Prop)
+                        (cord:C->C->Prop)(dord:D->D->Prop)(f:A->C)(g:C->A)(h:(A->B)->D)(i:D->(A->B)),
+            Galois' A C P S aord cord f g->Galois' (A->B) D Q T xord dord h i->
+            (forall (a:A)(x:A->B), P a->Q x-> R (x a))->
+            orderability A B C D g i aord xord P Q R S T->
+            exists (func: B->orthoprod A (A->B)), Galois' B (orthoprod C D) R (compprop C D S T) 
+            (depord A B aord xord func)(compord C D cord dord)
+            (composite func (compfunc C A (A->B) D f h)) (depfunc A B C D g i).
+        Proof.
+            unfold pool_minimum. unfold orderability. unfold Galois'. unfold posubset. 
+            unfold reflex'. unfold antisym'. unfold transit'. unfold depord. unfold depfunc.
+            unfold compord. unfold compprop. unfold compfunc. 
+            intros. destruct H2. exists x. split. split.
+            intros. split; [apply H|apply H0]; apply H2; try assumption;
+            try apply f; try apply h; try apply x; assumption.
+            split. intros. 
+            assert (eqn: fst A (A->B) (x x0)=fst A (A->B) (x y) ).
+            apply H; try apply H2; try apply f; try apply h; try apply x;
+            try assumption. apply H5. apply H6.
+            assert (eqn': snd A (A->B) (x x0)=snd A (A->B) (x y)).
+            apply H0; try apply H2; try apply f; try apply h; try apply x;
+            try assumption. apply H5. apply H6.
+            apply H2 in H3. destruct H3. destruct H7. rewrite<-H8.
+            apply H2 in H4. destruct H4. destruct H9. rewrite<-H10.
+            rewrite eqn. rewrite eqn'. reflexivity.
+            apply f. apply x. assumption. apply h. apply x. assumption.
+            apply f. apply x. assumption. apply h. apply x. assumption.
+            intros. split. 
+            apply H with (y:=(fst A (A -> B) (x y))); try apply H2; 
+            try apply h; try apply f; try apply x;
+            try assumption. apply H6. apply H7.
+            apply H0 with (y:=(snd A (A->B) (x y))); try apply H2; 
+            try apply h; try apply f; try apply x;
+            try assumption. apply H6. apply H7.
+            split. split; intros.
+            split. apply H. apply H3. apply H0. apply H3.
+            split; intros.
+            assert (eqn: (fst C D x0)=(fst C D y)). apply H.
+            apply H3. apply H4. apply H5. apply H6.
+            assert (eqn': (snd C D x0)=(snd C D y)). apply H0.
+            apply H3. apply H4. apply H5. apply H6.
+            rewrite product_terms. rewrite product_terms with (p:=x0).
+            rewrite eqn. rewrite eqn'. reflexivity.
+            split. apply H with (y:=(fst C D y)). 
+            apply H3. apply H4. apply H5. apply H6. apply H7.
+            apply H0 with (y:=(snd C D y)).
+            apply H3. apply H4. apply H5. apply H6. apply H7.
+            intros. split; intros. split; simpl. 
+            apply H. apply f. apply x. apply x0. apply H2.
+            apply f. apply x. assumption. apply h. apply x. assumption. assumption.
+            apply H0. apply h. apply x. apply x0. apply H2. 
+            apply f. apply x. assumption. apply h. apply x. assumption. assumption.
+            split; intros.
+            apply H1. apply H. apply x. apply x0. apply H3.
+            apply H0. apply x. apply x0. apply H3.
+            split; intros. split; simpl.
+            apply H. apply H2.
+            apply f. apply x. assumption. apply h. apply x. assumption. apply H3. apply H4.
+            apply H with (y:=(fst A (A -> B) (x (i (snd C D y) (g (fst C D y)))))).
+            apply H2.  apply f. apply x. assumption. apply h. apply x. assumption. assumption.
+            apply H2.  apply f. apply x. assumption. apply h. apply x. assumption. 
+            apply H1. apply H. apply x. assumption. apply H4.
+            apply H0. apply x. assumption. apply H4.
+            apply H. apply x. assumption. apply H4.
+            apply H5. apply H2; try apply H4. assumption.
+            apply H0. apply H2.  
+            apply f. apply x. assumption. apply h. apply x. assumption.
+            assumption. apply H4. 
+            apply H0 with (y:=(snd A (A -> B) (x (i (snd C D y) (g (fst C D y)))))).
+            apply H2. apply f. apply x. assumption. apply h. apply x. assumption.
+            assumption. apply H2. apply f. apply x. assumption. apply h. apply x. assumption.
+            apply H1. apply H. apply x. assumption. apply H4.
+            apply H0. apply x. assumption. apply H4.
+            apply H0. apply x. assumption. apply H4.
+            apply H5. apply H2; try apply H4. assumption.
+            split; simpl in H5; destruct H5;
+            apply H in H5; apply H0 in H6.
+            apply H2. assumption. apply H4. apply H4. assumption. assumption.
+            apply H2; try assumption; [apply f|apply h]; apply x; assumption.
+            apply H4.
+            apply H2; try assumption; [apply f|apply h]; apply x; assumption.
+            apply H2; try assumption; [apply f|apply h]; apply x; assumption.
+            apply H4. apply H4.
+            apply H2; try assumption; [apply f|apply h]; apply x; assumption.
+            apply H4.
+            apply H2. assumption. apply H4. apply H4. assumption. assumption.
+            apply H2; try assumption; [apply f|apply h]; apply x; assumption.
+            apply H4.
+            apply H2; try assumption; [apply f|apply h]; apply x; assumption.
+            apply H2; try assumption; [apply f|apply h]; apply x; assumption.
+            apply H4. apply H4.
+            apply H2; try assumption; [apply f|apply h]; apply x; assumption.
+            apply H4.
+            Qed.
+
+            
+
+
+
+            
+
+            
+
+
+
+
+    
+
+
+        
+
+
+
+
+            
+            
+
+            
+
+
 
 
  
